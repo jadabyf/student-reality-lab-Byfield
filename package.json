@@ -1,0 +1,16 @@
+{
+  "name": "student-reality-lab-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Housing Affordability for Young Adults - Student Reality Lab workspace",
+  "workspaces": [
+    "student-reality-lab-Byfield"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace student-reality-lab-byfield",
+    "build": "npm run build --workspace student-reality-lab-byfield",
+    "preview": "npm run preview --workspace student-reality-lab-byfield",
+    "generate-processed-data": "npm run generate-processed-data --workspace student-reality-lab-byfield",
+    "mcp:affordability": "npm run mcp:affordability --workspace student-reality-lab-byfield"
+  }
+}

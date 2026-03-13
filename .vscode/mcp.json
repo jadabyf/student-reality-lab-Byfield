@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "student-reality-lab-affordability": {
+      "type": "stdio",
+      "command": "npm",
+      "args": ["run", "mcp:affordability"]
+    }
+  }
+}
