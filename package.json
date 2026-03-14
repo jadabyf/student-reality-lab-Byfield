@@ -1,0 +1,21 @@
+{
+  "name": "student-reality-lab-byfield",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "generate-processed-data": "node scripts/generate-processed-data.mjs",
+    "mcp:affordability": "node mcp/affordability-server.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "chart.js": "^4.4.7",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11"
+  }
+}
