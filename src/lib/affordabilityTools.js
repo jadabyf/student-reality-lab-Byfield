@@ -4,6 +4,8 @@
  * and the project-scoped MCP server.
  */
 
+import { buildCityLookup, resolveCityQuery } from "./cityLookup.js";
+
 export const AFFORDABILITY_THRESHOLD = 30;
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -50,15 +52,58 @@ export function calcSurvivalScore(burdenPct) {
   return Math.max(0, Math.min(100, Math.round(100 - burdenPct * 1.25)));
 }
 
-/** Returns the most recent dataset row for a given city name (case-insensitive). */
-export function lookupCityRecord(city, rows) {
+const CITY_LOOKUP_CACHE = new WeakMap();
+
+function getCityLookup(rows) {
+  const cached = CITY_LOOKUP_CACHE.get(rows);
+  if (cached) {
+    return cached;
+  }
+
+  const built = buildCityLookup(rows);
+  CITY_LOOKUP_CACHE.set(rows, built);
+  return built;
+}
+
+/** Resolve a free-text city query to a city record from the dataset. */
+export function resolveCityRecord(cityQuery, rows) {
+  const lookup = getCityLookup(rows);
+  const resolved = resolveCityQuery(cityQuery, lookup);
+
+  if (!resolved.ok) {
+    return {
+      ok: false,
+      reason: resolved.reason,
+      cityQuery,
+      matches: resolved.matches ?? [],
+      suggestions: resolved.suggestions ?? [],
+    };
+  }
+
+  const city = resolved.city;
   const lower = city.toLowerCase();
   const latestYear = Math.max(...rows.map((r) => r.year));
-  return (
+  const record =
     rows.find((r) => r.city.toLowerCase() === lower && r.year === latestYear) ??
-    rows.filter((r) => r.city.toLowerCase() === lower).sort((a, b) => b.year - a.year)[0] ??
-    null
-  );
+    rows.filter((r) => r.city.toLowerCase() === city.toLowerCase()).sort((a, b) => b.year - a.year)[0] ??
+    null;
+
+  if (!record) {
+    return {
+      ok: false,
+      reason: "city_not_found",
+      cityQuery,
+      suggestions: resolved.suggestions ?? [],
+    };
+  }
+
+  return { ok: true, city: record.city, record, strategy: resolved.strategy };
+}
+
+/** Returns the most recent dataset row for a given city name. */
+export function lookupCityRecord(city, rows) {
+  const result = resolveCityRecord(city, rows);
+  return result.ok ? result.record : null;
 }
 
 // ── Tool 1 · get_city_affordability ───────────────────────────────────────
@@ -67,8 +112,18 @@ export function lookupCityRecord(city, rows) {
  * Uses the most recent year available in the dataset for that city.
  */
 export function tool_getCityAffordability(city, income, rows) {
-  const record = lookupCityRecord(city, rows);
-  if (!record) return { ok: false, city };
+  const cityResolution = resolveCityRecord(city, rows);
+  if (!cityResolution.ok) {
+    return {
+      ok: false,
+      city,
+      reason: cityResolution.reason,
+      matches: cityResolution.matches,
+      suggestions: cityResolution.suggestions,
+    };
+  }
+
+  const record = cityResolution.record;
   const burdenPct = calcBurdenPct(record.monthly_rent, income);
   return {
     ok: true,
@@ -78,6 +133,7 @@ export function tool_getCityAffordability(city, income, rows) {
     income,
     burdenPct,
     category: getBurdenCategory(burdenPct),
+    resolutionStrategy: cityResolution.strategy,
   };
 }
 

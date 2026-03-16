@@ -5,6 +5,7 @@ import {
   AFFORDABILITY_THRESHOLD,
   buildTrendSeriesFromRows,
   lookupCityRecord,
+  resolveCityRecord,
   tool_budgetLeftover,
   tool_calculateRentBurden,
   tool_compareCities,
@@ -86,6 +87,80 @@ function resolveRentInput(input, rows) {
   };
 }
 
+function getDatasetMetadata(rows) {
+  const cities = [...new Set(rows.map((row) => row.city))].sort();
+  const years = [...new Set(rows.map((row) => row.year))].sort((a, b) => a - b);
+
+  return {
+    cityCount: cities.length,
+    minYear: years[0],
+    maxYear: years[years.length - 1],
+    cities,
+    fields: ["city", "year", "monthly_rent", "median_income", "rent_burden"],
+    rentSource: "Zillow Observed Rent Index (ZORI)",
+    incomeSource: "U.S. Census ACS S1903 median income",
+  };
+}
+
+export async function explainDataset() {
+  const rows = await loadRows();
+  const meta = getDatasetMetadata(rows);
+
+  return {
+    ok: true,
+    ...meta,
+    summary: `Combined affordability dataset with ${meta.cityCount} cities across ${meta.minYear}-${meta.maxYear} using Zillow rent and Census ACS income data.`,
+  };
+}
+
+export async function listDatasetCities(limit = 100) {
+  const rows = await loadRows();
+  const meta = getDatasetMetadata(rows);
+  const clampedLimit = Math.max(1, Math.min(Number(limit) || 100, meta.cities.length));
+
+  return {
+    ok: true,
+    cityCount: meta.cityCount,
+    minYear: meta.minYear,
+    maxYear: meta.maxYear,
+    cities: meta.cities.slice(0, clampedLimit),
+  };
+}
+
+export async function checkCityExists(cityQuery) {
+  const rows = await loadRows();
+  const resolved = resolveCityRecord(cityQuery, rows);
+
+  if (!resolved.ok) {
+    return {
+      ok: false,
+      exists: false,
+      cityQuery,
+      reason: resolved.reason,
+      suggestions: resolved.suggestions ?? [],
+      matches: resolved.matches ?? [],
+    };
+  }
+
+  return {
+    ok: true,
+    exists: true,
+    city: resolved.city,
+    year: resolved.record.year,
+    monthlyRent: resolved.record.monthly_rent,
+  };
+}
+
+export function explainAffordabilityModel() {
+  return {
+    ok: true,
+    benchmarkPct: AFFORDABILITY_THRESHOLD,
+    formula: "rent_burden = (monthly_rent * 12) / annual_income",
+    explanation:
+      "The 30% benchmark is a common affordability threshold. Values above 30% generally indicate tighter housing budgets.",
+  };
+}
+
 export async function loadRows() {
   if (cachedRows) {
     return cachedRows;
@@ -108,6 +183,18 @@ export async function loadTrendSeries() {
 
 export async function invokeAffordabilityTool(toolName, input = {}) {
   switch (toolName) {
+    case "list_dataset_cities":
+      return listDatasetCities(input.limit ?? 100);
+
+    case "check_city_exists":
+      return checkCityExists(toRequiredString(input.city, "city"));
+
+    case "explain_dataset":
+      return explainDataset();
+
+    case "explain_affordability_model":
+      return explainAffordabilityModel();
+
     case "get_city_affordability": {
       const rows = await loadRows();
       return tool_getCityAffordability(

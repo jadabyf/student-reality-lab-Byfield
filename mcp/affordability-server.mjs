@@ -14,7 +14,14 @@ import {
   tool_rentStressTrend,
   lookupCityRecord,
 } from "../src/lib/affordabilityTools.js";
-import { loadRows, loadTrendSeries } from "../server/affordabilityService.js";
+import {
+  checkCityExists,
+  explainAffordabilityModel,
+  explainDataset,
+  listDatasetCities,
+  loadRows,
+  loadTrendSeries,
+} from "../server/affordabilityService.js";
 
 function fmtCurrency(value) {
   return `$${Math.round(value).toLocaleString()}`;
@@ -48,6 +55,67 @@ const server = new McpServer({
   name: "student-reality-lab-affordability",
   version: "1.0.0",
 });
+
+server.tool(
+  "list_dataset_cities",
+  {
+    limit: z.number().positive().max(300).default(50),
+  },
+  async ({ limit }) => {
+    const result = await listDatasetCities(limit);
+    return textResult(
+      `I can currently check ${result.cityCount} cities from ${result.minYear}-${result.maxYear}. Sample cities: ${result.cities.slice(0, 20).join(", ")}.`,
+      result,
+    );
+  },
+);
+
+server.tool(
+  "check_city_exists",
+  {
+    city: z.string().min(1),
+  },
+  async ({ city }) => {
+    const result = await checkCityExists(city);
+
+    if (!result.ok) {
+      const suggestions = (result.suggestions ?? []).slice(0, 5);
+      return textResult(
+        `I could not find ${city} in the rent dataset.${suggestions.length ? ` Closest matches: ${suggestions.join(", ")}.` : ""}`,
+        result,
+      );
+    }
+
+    return textResult(
+      `Yes, ${result.city} is available in the dataset (latest year: ${result.year}).`,
+      result,
+    );
+  },
+);
+
+server.tool(
+  "explain_dataset",
+  {},
+  async () => {
+    const result = await explainDataset();
+    return textResult(
+      `${result.summary} Fields used: ${result.fields.join(", ")}.`,
+      result,
+    );
+  },
+);
+
+server.tool(
+  "explain_affordability_model",
+  {},
+  async () => {
+    const result = explainAffordabilityModel();
+    return textResult(
+      `Formula: ${result.formula}. Benchmark: ${result.benchmarkPct}%. ${result.explanation}`,
+      result,
+    );
+  },
+);
 
 server.tool(
   "get_city_affordability",

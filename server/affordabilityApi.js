@@ -40,6 +40,10 @@ export async function handleAffordabilityApiRequest(req, res) {
       ok: true,
       transport: "http-bridge",
       tools: [
+        "list_dataset_cities",
+        "check_city_exists",
+        "explain_dataset",
+        "explain_affordability_model",
         "get_city_affordability",
         "calculate_rent_burden",
         "compare_cities",

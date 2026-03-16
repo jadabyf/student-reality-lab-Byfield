@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 import { handleAffordabilityApiRequest } from "./server/affordabilityApi.js";
 
+const GITHUB_PAGES_BASE = "/student-reality-lab-Byfield/";
+
 function affordabilityApiPlugin() {
   const attachMiddleware = (server) => {
     server.middlewares.use((req, res, next) => {
@@ -29,6 +31,7 @@ function affordabilityApiPlugin() {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  base: mode === "github-pages" ? GITHUB_PAGES_BASE : "/",
   plugins: [affordabilityApiPlugin()],
-});
+}));

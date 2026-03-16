@@ -3,165 +3,118 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Housing Affordability for Young Adults</title>
+    <title>Student Reality Lab | Housing Affordability AI</title>
     <script type="module" src="/src/main.js"></script>
   </head>
   <body>
     <main class="app-shell">
-      <header class="hero" aria-labelledby="page-title">
+      <header class="hero hero--landing" aria-labelledby="page-title">
         <p class="eyebrow">Student Reality Lab</p>
-        <h1 id="page-title">Can Young Adults Afford Rent in Major U.S. Cities?</h1>
+        <h1 id="page-title">Can You Afford to Move Out After College?</h1>
         <p class="subhead">
-          This story shows where rent takes the biggest share of income. It also shows whether more cities are crossing
-          the 30% affordability stress line over time.
+          Ask about salary, rent, city affordability, or moving after graduation. The assistant explains rent burden, compares cities,
+          and shows the numbers behind the answer.
         </p>
-        <p class="claim-statement">
-          Claim: Rent is taking a growing share of income in many U.S. cities, pushing more young adults above the 30%
-          affordability stress threshold.
-        </p>
-        <p id="key-takeaway" class="takeaway" aria-live="polite"></p>
+        <div class="hero-meta-row hero-meta-row--centered">
+          <span id="assistant-mode" class="assistant-mode" aria-live="polite">Checking mode...</span>
+          <span class="hero-meta-note">Student-friendly affordability guidance powered by rent and income data</span>
+        </div>
+        <div class="trust-row" aria-label="Assistant trust signals">
+          <span class="trust-pill">Uses rent + income data</span>
+          <span class="trust-pill">Benchmarked against the 30% affordability line</span>
+          <span class="trust-pill">Built for students and recent grads</span>
+        </div>
       </header>
 
-      <section class="context-card" aria-labelledby="context-title">
-        <h2 id="context-title">Why This Matters</h2>
-        <p>
-          For students and recent graduates, the question is simple. Can a first full-time paycheck cover rent without
-          crowding out everything else?
-        </p>
-      </section>
+      <section class="landing-stage" aria-label="Affordability assistant workspace">
+        <section class="chat-shell chat-shell--landing" aria-labelledby="checker-title">
+          <header class="chat-shell-head chat-shell-head--landing">
+            <div>
+              <h2 id="checker-title">Ask AI About Rent, Salary, and Cities</h2>
+              <p class="checker-intro">Try: Can I live in Los Angeles with 60k? Compare Dallas and Atlanta on 55k.</p>
+            </div>
+            <p id="assistant-capability-text" class="assistant-capability" aria-live="polite">Loading system status...</p>
+          </header>
 
-      <section class="content-grid" aria-label="Main story content">
-        <section class="chart-panel" aria-labelledby="chart-title">
-          <div class="chart-top-grid">
-            <div class="chart-intro">
-              <div class="chart-header">
-                <h2 id="chart-title">Start Here: Where Rent Takes the Biggest Bite</h2>
-                <div class="year-controls">
-                  <button id="year-prev" type="button" class="year-nav" aria-label="Previous year">Prev</button>
-                  <label for="year-select">View year</label>
-                  <select id="year-select" aria-label="Choose a year"></select>
-                  <button id="year-next" type="button" class="year-nav" aria-label="Next year">Next</button>
-                  <button id="year-latest" type="button" class="year-nav year-latest" aria-label="Jump to latest year">
-                    Latest
-                  </button>
-                </div>
+          <form id="chat-form" class="chat-form chat-form--landing" novalidate>
+            <label for="chat-input" class="sr-only">Ask affordability question</label>
+            <div class="chat-input-shell">
+              <input
+                type="text"
+                id="chat-input"
+                name="message"
+                placeholder="Ask if your salary can cover rent, compare two cities, or check rent stress trends"
+                autocomplete="off"
+                aria-label="Your affordability question"
+              />
+              <button type="submit" class="chat-submit">Ask</button>
+            </div>
+          </form>
+
+          <div id="chip-bar" class="chip-bar chip-bar--landing" role="group" aria-label="Starter prompts"></div>
+
+          <div
+            id="chat-history"
+            class="chat-history"
+            role="log"
+            aria-label="Affordability conversation"
+            aria-live="polite"
+          ></div>
+        </section>
+
+        <section class="support-rail" aria-labelledby="insights-title">
+          <section class="support-card support-card--about">
+            <h2 id="insights-title">Why Students Use This</h2>
+            <p>
+              Check whether a starting salary can cover rent, compare cities before moving, and understand when housing pressure becomes risky.
+            </p>
+            <p class="source-note">Source: datasets/processed.json using Zillow ZORI rent and ACS income data.</p>
+            <p id="system-status" class="system-status" aria-live="polite">Loading affordability data...</p>
+            <p id="year-feedback" class="year-feedback" aria-live="polite"></p>
+          </section>
+
+          <section class="support-card support-card--pulse" aria-labelledby="market-title">
+            <div class="support-card-head">
+              <div>
+                <h3 id="market-title">Affordability Snapshot</h3>
+                <p class="support-copy">Use the charts to see which cities are hardest on young-adult budgets and whether rent stress is spreading.</p>
               </div>
-              <p id="system-status" class="system-status" aria-live="polite">Loading affordability data...</p>
-              <p id="year-feedback" class="year-feedback" aria-live="polite"></p>
-              <p class="chart-guide">Change the year to see which cities move above the 30% benchmark and how the ranking changes.</p>
-              <p id="benchmark-description" class="quick-explainer">
-                Higher bars mean more income goes to rent. The red 30% marker is the common affordability stress benchmark.
-              </p>
-              <p id="annotation" class="annotation" aria-live="polite"></p>
+              <div class="year-controls">
+                <button id="year-prev" type="button" class="year-nav" aria-label="Previous year">Prev</button>
+                <label for="year-select">Year</label>
+                <select id="year-select" aria-label="Choose a year"></select>
+                <button id="year-next" type="button" class="year-nav" aria-label="Next year">Next</button>
+                <button id="year-latest" type="button" class="year-nav year-latest" aria-label="Jump to latest year">Latest</button>
+              </div>
             </div>
 
-            <aside class="summary-panel" aria-labelledby="summary-title">
-              <h2 id="summary-title">Read This First</h2>
-              <p class="summary-copy">
-                Start with the top bar. It shows the most strained city in the selected year. Cities beyond the red line are
-                above the 30% stress benchmark. Use the year control to see whether that pressure is spreading or easing.
-              </p>
-            </aside>
-          </div>
+            <div class="insight-grid">
+              <section class="insight-panel">
+                <p id="key-takeaway" class="takeaway" aria-live="polite"></p>
+                <p id="benchmark-description" class="quick-explainer">Red marker = 30% affordability benchmark.</p>
+                <p id="rent-chart-desc" class="sr-only">
+                  Horizontal bar chart with cities on the y-axis and rent burden percentage on the x-axis. A red marker shows the 30% affordability benchmark.
+                </p>
+                <div class="chart-canvas-wrap">
+                  <canvas id="rent-chart" role="img" aria-label="Rent burden by city" aria-describedby="rent-chart-desc benchmark-description"></canvas>
+                </div>
+                <p id="annotation" class="annotation" aria-live="polite"></p>
+                <p id="city-label-note" class="city-label-note" aria-live="polite"></p>
+              </section>
 
-          <p id="rent-chart-desc" class="sr-only">
-            Horizontal bar chart with cities on the y-axis and rent burden percentage on the x-axis. A red vertical marker shows the 30% affordability benchmark.
-          </p>
-          <div class="chart-canvas-wrap">
-            <canvas id="rent-chart" role="img" aria-label="Bar chart of rent burden by city" aria-describedby="rent-chart-desc benchmark-description"></canvas>
-          </div>
-          <p id="city-label-note" class="city-label-note" aria-live="polite"></p>
-          <p class="chart-method-note">Scale note: the x-axis adjusts to the selected year so bar comparisons stay readable for that year.</p>
-          <p class="source-note">
-            Sources: Zillow ZORI rent data and U.S. Census ACS income data, merged in <code>datasets/processed.json</code>.
-          </p>
+              <section class="insight-panel">
+                <p id="trend-chart-desc" class="sr-only">
+                  Line chart with year on x-axis and share of tracked cities above the 30% rent burden threshold on y-axis.
+                </p>
+                <div class="trend-canvas-wrap">
+                  <canvas id="trend-chart" role="img" aria-label="Share of cities above 30 percent over time" aria-describedby="trend-chart-desc benchmark-description"></canvas>
+                </div>
+                <p id="trend-annotation" class="trend-annotation" aria-live="polite"></p>
+                <p id="final-takeaway" class="final-takeaway" aria-live="polite"></p>
+              </section>
+            </div>
+          </section>
         </section>
-      </section>
-
-      <section class="trend-panel" aria-labelledby="trend-title">
-        <div class="trend-header">
-          <h2 id="trend-title">Second View: Is Rent Stress Spreading?</h2>
-          <p class="trend-explainer">
-            This view shows the share of tracked cities above the 30% threshold in each year, so you can tell whether this is a one-year spike or a broader pattern.
-          </p>
-        </div>
-        <div class="trend-canvas-wrap">
-          <p id="trend-chart-desc" class="sr-only">
-            Line chart with year on the x-axis and percentage of tracked cities above the 30% rent burden threshold on the y-axis.
-          </p>
-          <canvas id="trend-chart" role="img" aria-label="Line chart showing share of cities above 30 percent threshold over time" aria-describedby="trend-chart-desc benchmark-description"></canvas>
-        </div>
-        <p id="trend-annotation" class="trend-annotation" aria-live="polite"></p>
-      </section>
-
-      <section class="story" aria-labelledby="story-title">
-        <h2 id="story-title">More Detail</h2>
-        <details class="analysis-block" open>
-          <summary>How this measure works</summary>
-          <p>
-            Rent burden compares annual rent to annual income. This project combines Zillow ZORI rent data with U.S.
-            Census ACS income data to estimate how much income rent consumes in each city. The 30% line is a common
-            affordability stress benchmark.
-          </p>
-        </details>
-
-        <details class="analysis-block" open>
-          <summary>What the 30% line means</summary>
-          <p>
-            Rent burden is the share of income that would go to rent. When that share goes above 30%, housing is widely
-            treated as financially stressful because less income is left for savings and other essentials.
-          </p>
-        </details>
-
-        <details class="analysis-block" open>
-          <summary>Why changing the year matters</summary>
-          <p>
-            The year selector turns this from a snapshot into a test. If the same cities stay above 30% across years, or
-            more cities cross that line over time, the affordability problem is broader than one bad year.
-          </p>
-        </details>
-
-        <details class="analysis-block">
-          <summary>Data limitations to keep in mind</summary>
-          <p>
-            These are city-level averages, so they do not capture neighborhood variation or each person's exact situation.
-            The estimates also do not account for roommates or shared housing choices. This measure is best used to spot
-            broad affordability patterns, not to predict one person's exact budget.
-          </p>
-        </details>
-      </section>
-
-      <section class="takeaway-panel" aria-labelledby="takeaway-title">
-        <h2 id="takeaway-title">Student Takeaway</h2>
-        <p id="final-takeaway" class="final-takeaway" aria-live="polite"></p>
-      </section>
-
-      <section class="affordability-checker-panel" aria-labelledby="checker-title">
-        <h2 id="checker-title">Can You Afford to Move Out?</h2>
-        <p class="checker-intro">
-          Ask in plain English. Type your income and a city or rent amount — the bot
-          calculates your rent burden and tells you where you stand.
-        </p>
-        <div
-          id="chat-history"
-          class="chat-history"
-          role="log"
-          aria-label="Affordability conversation"
-          aria-live="polite"
-        ></div>
-        <div id="chip-bar" class="chip-bar" role="group" aria-label="Quick questions"></div>
-        <form id="chat-form" class="chat-form" novalidate>
-          <label for="chat-input" class="sr-only">Ask about affordability</label>
-          <input
-            type="text"
-            id="chat-input"
-            name="message"
-            placeholder="e.g. I make 52000 and want to move to Atlanta"
-            autocomplete="off"
-            aria-label="Your affordability question"
-          />
-          <button type="submit" class="chat-submit">Send</button>
-        </form>
       </section>
     </main>
   </body>

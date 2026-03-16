@@ -144,6 +144,10 @@ This project now includes a project-scoped MCP server that exposes the affordabi
 
 Exposed MCP tools:
 
+- `list_dataset_cities`
+- `check_city_exists`
+- `explain_dataset`
+- `explain_affordability_model`
 - `get_city_affordability`
 - `calculate_rent_burden`
 - `compare_cities`
@@ -159,3 +163,33 @@ The website chatbot still cannot call stdio MCP directly from the browser. To br
 - `GET /api/affordability/health` confirms the bridge is available and lists the exposed tool names
 
 That means the browser UI now talks to a project HTTP bridge first, while the MCP server and the HTTP bridge both stay aligned by reusing the same underlying affordability logic.
+
+## GitHub Pages Deployment
+
+This project can be deployed as a static site on GitHub Pages.
+
+### Why this works
+
+- `build:pages` uses a GitHub Pages base path for assets.
+- Build scripts copy local dataset files into `dist/datasets` so the chatbot can still load affordability data when hosted statically.
+- The browser attempts the HTTP bridge first, then gracefully falls back to local dataset routing when `/api/affordability/*` is unavailable on Pages.
+
+### Commands
+
+1. Install dependencies:
+
+   `npm install`
+
+2. Build for GitHub Pages:
+
+   `npm run build:pages`
+
+3. Deploy:
+
+   `npm run deploy`
+
+### Package scripts involved
+
+- `build:pages`: runs a production build in `github-pages` mode and copies datasets into `dist`.
+- `predeploy`: runs `build:pages` and writes `dist/.nojekyll`.
+- `deploy`: publishes `dist` to the `gh-pages` branch.
