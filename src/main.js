@@ -64,6 +64,7 @@ const systemStatusEl = document.getElementById("system-status");
 const cityLabelNoteEl = document.getElementById("city-label-note");
 const trendAnnotationEl = document.getElementById("trend-annotation");
 const finalTakeawayEl = document.getElementById("final-takeaway");
+const runtimeWarningEl = document.getElementById("runtime-warning");
 
 let allRows = [];
 let rentChart = null;
@@ -550,6 +551,16 @@ function setupYearSelect(years) {
   updateNavState(latestYear);
 }
 
+function showRuntimeWarning(message) {
+  if (!runtimeWarningEl) {
+    return;
+  }
+
+  runtimeWarningEl.hidden = false;
+  runtimeWarningEl.classList.add("runtime-warning--visible");
+  runtimeWarningEl.textContent = message;
+}
+
 async function init() {
   try {
     systemStatusEl.textContent = "Loading affordability data...";
@@ -578,6 +589,9 @@ async function init() {
   } catch (error) {
     systemStatusEl.textContent = "Could not load affordability data. Please refresh and try again.";
     annotationEl.textContent = "If this continues, verify that datasets/processed.json exists and contains valid rows.";
+    showRuntimeWarning(
+      "Runtime data failed to load. On GitHub Pages, set Pages Source to GitHub Actions and redeploy so the built dist assets and datasets are published.",
+    );
     console.error(error);
   }
 }

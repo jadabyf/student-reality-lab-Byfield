@@ -164,6 +164,23 @@ h1 {
   font-size: 0.9rem;
 }
 
+.runtime-warning {
+  display: none;
+  margin: 1rem auto 0;
+  max-width: 52rem;
+  border: 1px solid rgba(255, 142, 135, 0.36);
+  border-radius: 0.95rem;
+  background: rgba(255, 142, 135, 0.12);
+  color: #ffd8d4;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  padding: 0.7rem 0.85rem;
+}
+
+.runtime-warning--visible {
+  display: block;
+}
+
 .trust-row {
   display: flex;
   flex-wrap: wrap;

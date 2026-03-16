@@ -168,6 +168,11 @@ That means the browser UI now talks to a project HTTP bridge first, while the MC
 
 This project can be deployed as a static site on GitHub Pages.
 
+Important setup in repository settings:
+
+- Set Pages Source to GitHub Actions.
+- Do not use Deploy from a branch for this repo, because source files are Vite input files and will render as broken/raw HTML without the build output.
+
 ### Why this works
 
 - `build:pages` uses a GitHub Pages base path for assets.
@@ -187,6 +192,12 @@ This project can be deployed as a static site on GitHub Pages.
 3. Deploy:
 
    `npm run deploy`
+
+### Recommended CI deployment
+
+This repo includes [.github/workflows/pages.yml](.github/workflows/pages.yml), which builds and deploys `dist` automatically on push to `main`.
+
+If you use the workflow, manual `npm run deploy` is optional.
 
 ### Package scripts involved
 
