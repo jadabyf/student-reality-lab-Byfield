@@ -4,20 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Student Reality Lab | Housing Affordability AI</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "chart.js": "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/+esm"
+        }
+      }
+    </script>
     <script type="module" src="/src/main.js"></script>
   </head>
   <body>
-    <main class="app-shell">
+    <main class="app-shell app-shell--chatfirst">
       <header class="hero hero--landing" aria-labelledby="page-title">
-        <p class="eyebrow">Student Reality Lab</p>
+        <p class="eyebrow">Student Reality Lab AI</p>
         <h1 id="page-title">Can You Afford to Move Out After College?</h1>
         <p class="subhead">
-          Ask about salary, rent, city affordability, or moving after graduation. The assistant explains rent burden, compares cities,
-          and shows the numbers behind the answer.
+          Ask one question and get student-focused affordability answers backed by real rent and income data.
         </p>
         <div class="hero-meta-row hero-meta-row--centered">
           <span id="assistant-mode" class="assistant-mode" aria-live="polite">Checking mode...</span>
-          <span class="hero-meta-note">Student-friendly affordability guidance powered by rent and income data</span>
+          <span class="hero-meta-note">Your AI housing copilot for salary, rent, and city decisions</span>
         </div>
         <noscript>
           <p class="runtime-warning runtime-warning--visible">
@@ -26,17 +32,17 @@
         </noscript>
         <p id="runtime-warning" class="runtime-warning" role="status" aria-live="polite" hidden></p>
         <div class="trust-row" aria-label="Assistant trust signals">
-          <span class="trust-pill">Uses rent + income data</span>
+          <span class="trust-pill">Data-backed answers</span>
           <span class="trust-pill">Benchmarked against the 30% affordability line</span>
           <span class="trust-pill">Built for students and recent grads</span>
         </div>
       </header>
 
-      <section class="landing-stage" aria-label="Affordability assistant workspace">
-        <section class="chat-shell chat-shell--landing" aria-labelledby="checker-title">
+      <section class="chat-stage" aria-label="Affordability assistant workspace">
+        <section class="chat-shell chat-shell--landing chat-shell--primary" aria-labelledby="checker-title">
           <header class="chat-shell-head chat-shell-head--landing">
             <div>
-              <h2 id="checker-title">Ask AI About Rent, Salary, and Cities</h2>
+              <h2 id="checker-title">Ask the Affordability Assistant</h2>
               <p class="checker-intro">Try: Can I live in Los Angeles with 60k? Compare Dallas and Atlanta on 55k.</p>
             </div>
             <p id="assistant-capability-text" class="assistant-capability" aria-live="polite">Loading system status...</p>
@@ -68,59 +74,57 @@
           ></div>
         </section>
 
-        <section class="support-rail" aria-labelledby="insights-title">
-          <section class="support-card support-card--about">
-            <h2 id="insights-title">Why Students Use This</h2>
-            <p>
-              Check whether a starting salary can cover rent, compare cities before moving, and understand when housing pressure becomes risky.
-            </p>
+        <aside class="side-context" aria-label="How it works">
+          <section class="context-card">
+            <h2>How It Works</h2>
+            <p>Ask about your salary, rent, or city. The assistant retrieves relevant rows, explains the math, and shows affordability risk clearly.</p>
             <p class="source-note">Source: datasets/processed.json using Zillow ZORI rent and ACS income data.</p>
             <p id="system-status" class="system-status" aria-live="polite">Loading affordability data...</p>
             <p id="year-feedback" class="year-feedback" aria-live="polite"></p>
           </section>
+        </aside>
+      </section>
 
-          <section class="support-card support-card--pulse" aria-labelledby="market-title">
-            <div class="support-card-head">
-              <div>
-                <h3 id="market-title">Affordability Snapshot</h3>
-                <p class="support-copy">Use the charts to see which cities are hardest on young-adult budgets and whether rent stress is spreading.</p>
-              </div>
-              <div class="year-controls">
-                <button id="year-prev" type="button" class="year-nav" aria-label="Previous year">Prev</button>
-                <label for="year-select">Year</label>
-                <select id="year-select" aria-label="Choose a year"></select>
-                <button id="year-next" type="button" class="year-nav" aria-label="Next year">Next</button>
-                <button id="year-latest" type="button" class="year-nav year-latest" aria-label="Jump to latest year">Latest</button>
-              </div>
+      <section class="insights-dock" aria-labelledby="market-title">
+        <header class="dock-head">
+          <div>
+            <h3 id="market-title">Affordability Evidence Panel</h3>
+            <p class="support-copy">Use the charts to confirm which cities are hardest on young-adult budgets and whether rent stress is spreading.</p>
+          </div>
+          <div class="year-controls">
+            <button id="year-prev" type="button" class="year-nav" aria-label="Previous year">Prev</button>
+            <label for="year-select">Year</label>
+            <select id="year-select" aria-label="Choose a year"></select>
+            <button id="year-next" type="button" class="year-nav" aria-label="Next year">Next</button>
+            <button id="year-latest" type="button" class="year-nav year-latest" aria-label="Jump to latest year">Latest</button>
+          </div>
+        </header>
+
+        <div class="insight-grid">
+          <section class="insight-panel">
+            <p id="key-takeaway" class="takeaway" aria-live="polite"></p>
+            <p id="benchmark-description" class="quick-explainer">Red marker = 30% affordability benchmark.</p>
+            <p id="rent-chart-desc" class="sr-only">
+              Horizontal bar chart with cities on the y-axis and rent burden percentage on the x-axis. A red marker shows the 30% affordability benchmark.
+            </p>
+            <div class="chart-canvas-wrap">
+              <canvas id="rent-chart" role="img" aria-label="Rent burden by city" aria-describedby="rent-chart-desc benchmark-description"></canvas>
             </div>
-
-            <div class="insight-grid">
-              <section class="insight-panel">
-                <p id="key-takeaway" class="takeaway" aria-live="polite"></p>
-                <p id="benchmark-description" class="quick-explainer">Red marker = 30% affordability benchmark.</p>
-                <p id="rent-chart-desc" class="sr-only">
-                  Horizontal bar chart with cities on the y-axis and rent burden percentage on the x-axis. A red marker shows the 30% affordability benchmark.
-                </p>
-                <div class="chart-canvas-wrap">
-                  <canvas id="rent-chart" role="img" aria-label="Rent burden by city" aria-describedby="rent-chart-desc benchmark-description"></canvas>
-                </div>
-                <p id="annotation" class="annotation" aria-live="polite"></p>
-                <p id="city-label-note" class="city-label-note" aria-live="polite"></p>
-              </section>
-
-              <section class="insight-panel">
-                <p id="trend-chart-desc" class="sr-only">
-                  Line chart with year on x-axis and share of tracked cities above the 30% rent burden threshold on y-axis.
-                </p>
-                <div class="trend-canvas-wrap">
-                  <canvas id="trend-chart" role="img" aria-label="Share of cities above 30 percent over time" aria-describedby="trend-chart-desc benchmark-description"></canvas>
-                </div>
-                <p id="trend-annotation" class="trend-annotation" aria-live="polite"></p>
-                <p id="final-takeaway" class="final-takeaway" aria-live="polite"></p>
-              </section>
-            </div>
+            <p id="annotation" class="annotation" aria-live="polite"></p>
+            <p id="city-label-note" class="city-label-note" aria-live="polite"></p>
           </section>
-        </section>
+
+          <section class="insight-panel">
+            <p id="trend-chart-desc" class="sr-only">
+              Line chart with year on x-axis and share of tracked cities above the 30% rent burden threshold on y-axis.
+            </p>
+            <div class="trend-canvas-wrap">
+              <canvas id="trend-chart" role="img" aria-label="Share of cities above 30 percent over time" aria-describedby="trend-chart-desc benchmark-description"></canvas>
+            </div>
+            <p id="trend-annotation" class="trend-annotation" aria-live="polite"></p>
+            <p id="final-takeaway" class="final-takeaway" aria-live="polite"></p>
+          </section>
+        </div>
       </section>
     </main>
   </body>

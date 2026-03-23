@@ -35,6 +35,9 @@ jobs:
       - name: Build for GitHub Pages
         run: npm run build:pages
 
+      - name: Ensure no Jekyll processing
+        run: touch dist/.nojekyll
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

@@ -1,5 +1,6 @@
 import "./styles.css";
 import { buildTrendSeriesFromRows } from "./lib/affordabilityTools.js";
+import { resolveBaseUrl } from "./lib/runtimeBase.js";
 import { initAffordabilityChatbot } from "./components/AffordabilityChatbot.js";
 import {
   BarController,
@@ -47,7 +48,8 @@ if (!Tooltip.positioners.benchmarkSafe) {
   };
 }
 
-const DATASET_PATH = `${import.meta.env.BASE_URL}datasets/processed.json`;
+const BASE_URL = resolveBaseUrl();
+const DATASET_PATH = `${BASE_URL}datasets/processed.json`;
 const TOP_CITY_COUNT = 12;
 const AFFORDABILITY_THRESHOLD = 30;
 

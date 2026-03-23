@@ -1,9 +1,10 @@
 import { routeMessage } from "../lib/chatRouter.js";
+import { resolveBaseUrl } from "../lib/runtimeBase.js";
 import { normalizePrompt } from "../lib/promptParser.js";
 import { mountPromptChips } from "./PromptChips.js";
 import { appendChatMessage, appendTypingIndicator } from "./chat/ChatMessage.js";
 
-const API_BASE = `${import.meta.env.BASE_URL}api/affordability`;
+const API_BASE = `${resolveBaseUrl()}api/affordability`;
 
 async function checkBridgeHealth() {
   try {
