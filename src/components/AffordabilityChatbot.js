@@ -1,75 +1,10 @@
-import { routeMessage } from "../lib/chatRouter.js";
+import { createChatService } from "../lib/chatService.js";
 import { resolveBaseUrl } from "../lib/runtimeBase.js";
 import { normalizePrompt } from "../lib/promptParser.js";
 import { mountPromptChips } from "./PromptChips.js";
 import { appendChatMessage, appendTypingIndicator } from "./chat/ChatMessage.js";
 
 const API_BASE = `${resolveBaseUrl()}api/affordability`;
-
-function isLocalRuntime() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  const host = window.location.hostname;
-  return host === "localhost" || host === "127.0.0.1";
-}
-
-async function checkBridgeHealth() {
-  if (!isLocalRuntime()) {
-    return {
-      ok: false,
-      reason: "Static deployment detected (MCP is local-only).",
-    };
-  }
-
-  try {
-    const response = await fetch(`${API_BASE}/health`);
-
-    if (!response.ok) {
-      return { ok: false, reason: `health request failed (${response.status})` };
-    }
-
-    const payload = await response.json();
-    return payload?.ok
-      ? { ok: true, transport: payload.transport ?? "mcp-stdio", tools: payload.tools ?? [] }
-      : { ok: false, reason: payload?.reason ?? "MCP bridge not available" };
-  } catch {
-    return { ok: false, reason: "health request could not reach API bridge" };
-  }
-}
-
-async function requestBotReply(text, rows, trendSeriesData) {
-  try {
-    const response = await fetch(`${API_BASE}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Affordability API returned ${response.status}.`);
-    }
-
-    const payload = await response.json();
-
-    if (!payload.ok || typeof payload.text !== "string") {
-      throw new Error(payload.error || "Affordability API returned an invalid response.");
-    }
-
-    return payload;
-  } catch (error) {
-    console.warn("Falling back to local affordability router.", error);
-    return {
-      ok: true,
-      transport: "local-retrieval-fallback",
-      meta: {
-        fallbackReason: error instanceof Error ? error.message : String(error),
-      },
-      ...routeMessage(text, rows, trendSeriesData),
-    };
-  }
-}
 
 export function initAffordabilityChatbot(rows, trendSeriesData) {
   const form = document.getElementById("chat-form");
@@ -78,6 +13,7 @@ export function initAffordabilityChatbot(rows, trendSeriesData) {
   const chipBar = document.getElementById("chip-bar");
   const modeBadge = document.getElementById("assistant-mode");
   const capabilityText = document.getElementById("assistant-capability-text");
+  const chatService = createChatService({ apiBase: API_BASE, rows, trendSeriesData });
 
   if (!form || !input || !historyEl) return;
 
@@ -91,7 +27,7 @@ export function initAffordabilityChatbot(rows, trendSeriesData) {
     input.focus();
 
     const typingEl = appendTypingIndicator(historyEl);
-    const reply = await requestBotReply(normalized, rows, trendSeriesData);
+    const reply = await chatService.getReply(normalized);
     typingEl.remove();
 
     appendChatMessage(
@@ -123,23 +59,21 @@ export function initAffordabilityChatbot(rows, trendSeriesData) {
     },
   );
 
-  void checkBridgeHealth().then((health) => {
+  void chatService.getConnectionStatus().then((health) => {
     if (!modeBadge || !capabilityText) {
       return;
     }
 
-    if (health.ok) {
-      modeBadge.textContent = "Connected to MCP server";
+    if (health.mode === "mcp") {
+      modeBadge.textContent = health.display.badge;
       modeBadge.classList.remove("assistant-mode--local");
-      capabilityText.textContent =
-        `Connected via ${health.transport}. Available tools: ${(health.tools ?? []).slice(0, 6).join(", ")}${(health.tools ?? []).length > 6 ? ", ..." : ""}.`;
+      capabilityText.textContent = health.display.detail;
       return;
     }
 
-    modeBadge.textContent = "Running in local mode";
+    modeBadge.textContent = health.display.badge;
     modeBadge.classList.add("assistant-mode--local");
-    capabilityText.textContent =
-      `Running in local mode (MCP not connected). Reason: ${health.reason ?? "MCP bridge unavailable"}.`;
+    capabilityText.textContent = health.display.detail;
   });
 
   form.addEventListener("submit", (e) => {
