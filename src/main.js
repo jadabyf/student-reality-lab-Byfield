@@ -1,4 +1,3 @@
-import "./styles.css";
 import { buildTrendSeriesFromRows } from "./lib/affordabilityTools.js";
 import { resolveBaseUrl } from "./lib/runtimeBase.js";
 import { initAffordabilityChatbot } from "./components/AffordabilityChatbot.js";
