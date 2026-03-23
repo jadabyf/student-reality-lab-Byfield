@@ -9,6 +9,8 @@
     "build:pages": "vite build --mode github-pages && node scripts/copy-datasets.mjs",
     "preview": "vite preview",
     "generate-processed-data": "node scripts/generate-processed-data.mjs",
+    "mcp": "node server/index.js",
+    "mcp:server": "node mcp/affordability-server.mjs",
     "mcp:affordability": "node mcp/affordability-server.mjs",
     "predeploy": "npm run build:pages && node -e \"require('fs').writeFileSync('dist/.nojekyll','')\"",
     "deploy": "gh-pages -d dist"

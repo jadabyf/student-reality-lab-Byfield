@@ -1,9 +1,12 @@
 import { routeMessage } from "../src/lib/chatRouter.js";
+import { detectIntent, parseMessage } from "../src/lib/promptParser.js";
 import {
   invokeAffordabilityTool,
+  invokeAffordabilityToolViaMcp,
   loadRows,
   loadTrendSeries,
 } from "./affordabilityService.js";
+import { getMcpBridgeHealth } from "./mcpBridge.js";
 
 const API_BASE = "/api/affordability";
 
@@ -11,6 +14,119 @@ function sendJson(res, statusCode, payload) {
   res.statusCode = statusCode;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.end(JSON.stringify(payload));
+}
+
+function buildMcpToolRequest(message, rows) {
+  const cityNames = [...new Set(rows.map((row) => row.city))];
+  const parsed = parseMessage(message, cityNames);
+  const intent = detectIntent(message);
+
+  switch (intent) {
+    case "list_dataset_cities":
+      return { tool: "list_dataset_cities", args: { limit: 50 }, intent, parsed };
+    case "check_city_exists":
+      return parsed.city ? { tool: "check_city_exists", args: { city: parsed.city }, intent, parsed } : null;
+    case "explain_dataset":
+      return { tool: "explain_dataset", args: {}, intent, parsed };
+    case "explain_model":
+      return { tool: "explain_affordability_model", args: {}, intent, parsed };
+    case "compare":
+      return parsed.city && parsed.city2 && parsed.income
+        ? {
+            tool: "compare_cities",
+            args: { city1: parsed.city, city2: parsed.city2, annualIncome: parsed.income },
+            intent,
+            parsed,
+          }
+        : null;
+    case "find_cities":
+      return parsed.income
+        ? {
+            tool: "find_affordable_cities",
+            args: { annualIncome: parsed.income, threshold: 30 },
+            intent,
+            parsed,
+          }
+        : null;
+    case "trend":
+      return { tool: "rent_stress_trend", args: {}, intent, parsed };
+    case "budget_leftover":
+      return parsed.income
+        ? {
+            tool: "budget_leftover",
+            args: {
+              annualIncome: parsed.income,
+              ...(parsed.city ? { city: parsed.city } : {}),
+              ...(parsed.rent ? { monthlyRent: parsed.rent } : {}),
+            },
+            intent,
+            parsed,
+          }
+        : null;
+    case "survival_score":
+      return parsed.income
+        ? {
+            tool: "post_grad_survival_score",
+            args: {
+              annualIncome: parsed.income,
+              ...(parsed.city ? { city: parsed.city } : {}),
+              ...(parsed.rent ? { monthlyRent: parsed.rent } : {}),
+            },
+            intent,
+            parsed,
+          }
+        : null;
+    case "affordability":
+      if (parsed.city && parsed.income) {
+        return {
+          tool: "get_city_affordability",
+          args: { city: parsed.city, annualIncome: parsed.income },
+          intent,
+          parsed,
+        };
+      }
+
+      if (parsed.income && parsed.rent) {
+        return {
+          tool: "calculate_rent_burden",
+          args: { annualIncome: parsed.income, monthlyRent: parsed.rent },
+          intent,
+          parsed,
+        };
+      }
+
+      return null;
+    default:
+      return null;
+  }
+}
+
+async function tryMcpChatReply(message, rows) {
+  const toolRequest = buildMcpToolRequest(message, rows);
+  if (!toolRequest) {
+    return { ok: false, reason: "No MCP tool mapping for this prompt." };
+  }
+
+  const mcpResponse = await invokeAffordabilityToolViaMcp(toolRequest.tool, toolRequest.args);
+  if (!mcpResponse.ok) {
+    return {
+      ok: false,
+      reason: mcpResponse.text || "MCP tool returned an error.",
+      tool: toolRequest.tool,
+    };
+  }
+
+  return {
+    ok: true,
+    text: mcpResponse.text || "MCP returned an empty response.",
+    category: mcpResponse.structuredContent?.category ?? null,
+    chart: null,
+    meta: {
+      tool: toolRequest.tool,
+      retrieval: "mcp-tool",
+      intent: toolRequest.intent,
+    },
+  };
 }
 
 async function readJsonBody(req) {
@@ -36,22 +152,15 @@ export async function handleAffordabilityApiRequest(req, res) {
   }
 
   if (req.method === "GET" && requestUrl.pathname === `${API_BASE}/health`) {
+    const mcpHealth = await getMcpBridgeHealth();
+
     sendJson(res, 200, {
-      ok: true,
-      transport: "http-bridge",
-      tools: [
-        "list_dataset_cities",
-        "check_city_exists",
-        "explain_dataset",
-        "explain_affordability_model",
-        "get_city_affordability",
-        "calculate_rent_burden",
-        "compare_cities",
-        "rent_stress_trend",
-        "post_grad_survival_score",
-        "find_affordable_cities",
-        "budget_leftover",
-      ],
+      ok: mcpHealth.ok,
+      transport: mcpHealth.ok ? "mcp-stdio" : "local-retrieval-fallback",
+      mode: mcpHealth.ok ? "connected" : "local-fallback",
+      reason: mcpHealth.reason ?? null,
+      tools: mcpHealth.tools ?? [],
+      mcp: mcpHealth,
     });
     return true;
   }
@@ -78,12 +187,34 @@ export async function handleAffordabilityApiRequest(req, res) {
       }
 
       const [rows, trendSeries] = await Promise.all([loadRows(), loadTrendSeries()]);
+      let mcpReply = null;
+      let mcpError = null;
+
+      try {
+        mcpReply = await tryMcpChatReply(body.message.trim(), rows);
+      } catch (error) {
+        mcpError = error instanceof Error ? error.message : String(error);
+      }
+
+      if (mcpReply?.ok) {
+        sendJson(res, 200, {
+          ok: true,
+          transport: "mcp-stdio",
+          ...mcpReply,
+        });
+        return true;
+      }
+
       const reply = routeMessage(body.message.trim(), rows, trendSeries);
 
       sendJson(res, 200, {
         ok: true,
-        transport: "http-bridge",
+        transport: "local-retrieval-fallback",
         ...reply,
+        meta: {
+          ...(reply.meta ?? {}),
+          mcpReason: mcpReply?.reason ?? mcpError ?? null,
+        },
       });
       return true;
     }
@@ -94,11 +225,28 @@ export async function handleAffordabilityApiRequest(req, res) {
         return true;
       }
 
-      const result = await invokeAffordabilityTool(body.tool.trim(), body.args ?? {});
+      const toolName = body.tool.trim();
+      let result;
+      let transport = "mcp-stdio";
+
+      try {
+        result = await invokeAffordabilityToolViaMcp(toolName, body.args ?? {});
+      } catch (error) {
+        transport = "local-retrieval-fallback";
+        const fallback = await invokeAffordabilityTool(toolName, body.args ?? {});
+        result = {
+          ok: fallback?.ok ?? true,
+          text: "",
+          structuredContent: fallback,
+          raw: fallback,
+          fallbackReason: error instanceof Error ? error.message : String(error),
+        };
+      }
+
       sendJson(res, 200, {
         ok: result?.ok ?? true,
-        transport: "http-bridge",
-        tool: body.tool.trim(),
+        transport,
+        tool: toolName,
         result,
       });
       return true;

@@ -14,6 +14,7 @@ import {
   tool_postGradSurvivalScore,
   tool_rentStressTrend,
 } from "../src/lib/affordabilityTools.js";
+import { callMcpTool } from "./mcpBridge.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const datasetPath = path.resolve(__dirname, "../datasets/processed.json");
@@ -271,4 +272,20 @@ export async function invokeAffordabilityTool(toolName, input = {}) {
     default:
       throw new Error(`Unsupported tool: ${toolName}`);
   }
+}
+
+export async function invokeAffordabilityToolViaMcp(toolName, input = {}) {
+  const mcpResult = await callMcpTool(toolName, input);
+  const content = Array.isArray(mcpResult?.content) ? mcpResult.content : [];
+  const text = content
+    .filter((item) => item?.type === "text" && typeof item?.text === "string")
+    .map((item) => item.text)
+    .join("\n\n");
+
+  return {
+    ok: mcpResult?.isError ? false : true,
+    text,
+    structuredContent: mcpResult?.structuredContent ?? null,
+    raw: mcpResult,
+  };
 }

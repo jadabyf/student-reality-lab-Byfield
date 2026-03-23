@@ -6,18 +6,36 @@ import { appendChatMessage, appendTypingIndicator } from "./chat/ChatMessage.js"
 
 const API_BASE = `${resolveBaseUrl()}api/affordability`;
 
+function isLocalRuntime() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1";
+}
+
 async function checkBridgeHealth() {
+  if (!isLocalRuntime()) {
+    return {
+      ok: false,
+      reason: "Static deployment detected (MCP is local-only).",
+    };
+  }
+
   try {
     const response = await fetch(`${API_BASE}/health`);
 
     if (!response.ok) {
-      return { ok: false };
+      return { ok: false, reason: `health request failed (${response.status})` };
     }
 
     const payload = await response.json();
-    return payload?.ok ? { ok: true, transport: payload.transport ?? "http-bridge" } : { ok: false };
+    return payload?.ok
+      ? { ok: true, transport: payload.transport ?? "mcp-stdio", tools: payload.tools ?? [] }
+      : { ok: false, reason: payload?.reason ?? "MCP bridge not available" };
   } catch {
-    return { ok: false };
+    return { ok: false, reason: "health request could not reach API bridge" };
   }
 }
 
@@ -45,6 +63,9 @@ async function requestBotReply(text, rows, trendSeriesData) {
     return {
       ok: true,
       transport: "local-retrieval-fallback",
+      meta: {
+        fallbackReason: error instanceof Error ? error.message : String(error),
+      },
       ...routeMessage(text, rows, trendSeriesData),
     };
   }
@@ -108,17 +129,17 @@ export function initAffordabilityChatbot(rows, trendSeriesData) {
     }
 
     if (health.ok) {
-      modeBadge.textContent = "MCP-aligned mode";
+      modeBadge.textContent = "Connected to MCP server";
       modeBadge.classList.remove("assistant-mode--local");
       capabilityText.textContent =
-        "This assistant is using the project HTTP bridge backed by the repo MCP tool layer for chat responses.";
+        `Connected via ${health.transport}. Available tools: ${(health.tools ?? []).slice(0, 6).join(", ")}${(health.tools ?? []).length > 6 ? ", ..." : ""}.`;
       return;
     }
 
-    modeBadge.textContent = "Local retrieval mode";
+    modeBadge.textContent = "Running in local mode";
     modeBadge.classList.add("assistant-mode--local");
     capabilityText.textContent =
-      "MCP bridge is currently unavailable, so responses use local dataset retrieval and the same affordability tool logic in-browser.";
+      `Running in local mode (MCP not connected). Reason: ${health.reason ?? "MCP bridge unavailable"}.`;
   });
 
   form.addEventListener("submit", (e) => {
